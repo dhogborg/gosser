@@ -13,6 +13,8 @@ import (
 	"github.com/dhogborg/gosser/internal/ssocr"
 )
 
+var DEBUG = false
+
 func main() {
 
 	app := cli.NewApp()
@@ -24,14 +26,18 @@ func main() {
 
 	app.Action = func(c *cli.Context) {
 
-		if c.Bool("debug") {
-			ssocr.DEBUG = true
-		}
+		DEBUG := c.Bool("debug")
+		ssocr.DEBUG = DEBUG
 
 		// use a manifest file for segment reading
 		var manifest []byte
 		if manifestfile := c.String("manifest"); manifestfile != "" {
-			log.Info("using manifest file")
+
+			if DEBUG {
+				log.WithFields(log.Fields{
+					"file": manifestfile,
+				}).Info("using manifest file")
+			}
 
 			buffer, err := ioutil.ReadFile(manifestfile)
 			if err != nil {
