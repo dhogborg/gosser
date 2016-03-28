@@ -56,8 +56,8 @@ func main() {
 				log.WithFields(log.Fields{
 					"result": result,
 				}).Error("result is not well formed (pedantic mode)")
+				os.Exit(-1)
 			}
-			os.Exit(-1)
 		}
 
 		if c.String("output") == "int" {
@@ -71,7 +71,9 @@ func main() {
 				i = i / c.Float64("div")
 			}
 
-			fmt.Printf("%f\n", i)
+			result := fmt.Sprintf("%f", i)
+			log.Info(result)
+			println(result)
 			os.Exit(0)
 		}
 
