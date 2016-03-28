@@ -1,17 +1,20 @@
 
-.PHONY: setup build resources lint clean
+.PHONY: build lint clean package
 
 VERSION = $(shell git describe --always --dirty)
 TIMESTAMP = $(shell git show -s --format=%ct)
 
 default: build_darwin
 
-build_darwin: resources
+build_darwin: 
 	GOOS=darwin GOARCH=amd64 go build -a -o ./build/gosser *.go
 
-build_linux: resources
+build_linux: 
 	GOOS=linux GOARCH=amd64 go build -a -o ./build/gosser *.go
 
+package: build_linux
+	docker build -t dhogborg/gosser:latest .
+	
 lint:
 	golint .
 

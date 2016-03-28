@@ -1,6 +1,7 @@
 package ssocr
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
 	"os"
@@ -23,17 +24,19 @@ var DEBUG = false
 // SSOCR is a seven segment display OCR reader
 type SSOCR struct {
 	Positions int
+	Manifest  []byte
 }
 
 // NewSSOCR returns a new scanner with the number of positions
 // specified.
-func NewSSOCR(positions int) *SSOCR {
+func NewSSOCR(positions int, manifest []byte) *SSOCR {
 	s := &SSOCR{
 		Positions: positions,
+		Manifest:  manifest,
 	}
 
 	if DEBUG {
-		os.Mkdir("./debug", os.ModeDir)
+		os.Mkdir("./debug", 755)
 		log.SetLevel(log.DebugLevel)
 	}
 
@@ -48,23 +51,33 @@ func (s *SSOCR) Scan(imagefile string) string {
 	// Decode the JPEG data. If reading from file, create a reader with
 	img := s.readFile(imagefile)
 
+	var predefs []*SsDigit
+	if s.Manifest != nil {
+		err := json.Unmarshal(s.Manifest, &predefs)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	str := ""
 	digits := []*SsDigit{}
 	for a := 0; a < s.Positions; a++ {
+
 		segm := s.extractPosition(img, a)
+		var position *SsDigit
 
-		digits = append(digits, s.scanPosition(segm))
-		str = str + digits[a].String()
-
-		// debug output the segments
-		if DEBUG {
-			out, err := os.Create(fmt.Sprintf("debug/%d.png", a))
-			if err != nil {
-				log.Panic(err)
-			}
-			png.Encode(out, segm)
-			out.Close()
+		if len(predefs) == 0 {
+			position = NewSsDigit(segm)
+		} else {
+			position = predefs[a]
+			position.Image = segm
 		}
+
+		position.Position = a
+		position.Scan()
+		str = str + position.String()
+
+		digits = append(digits, position)
 
 	}
 
@@ -112,16 +125,12 @@ func (s *SSOCR) extractPosition(img image.Image, position int) image.Image {
 	return rgba.SubImage(subrect)
 }
 
-func (s *SSOCR) scanPosition(segment image.Image) *SsDigit {
-
-	pos := NewSsDigit(segment)
-	pos.Scan()
-
-	return pos
-}
-
 type SsDigit struct {
-	Image image.Image
+	Position int
+	Image    image.Image
+
+	NorthPoint []int `json:"north"`
+	SouthPoint []int `json:"south"`
 
 	// segments
 	NorthPole bool
@@ -158,12 +167,19 @@ func (s *SsDigit) Scan() {
 	// scan in 4 directions from two points, north and south.
 
 	// North origin points and the center segment
-	northOrigin := image.Point{X: b.Min.X + halfWidth - 1, Y: b.Min.Y + quarterHeight}
+	var northOrigin image.Point
+	if len(s.NorthPoint) == 2 {
+		northOrigin = image.Point{X: s.NorthPoint[0], Y: s.NorthPoint[1]}
+	} else {
+		northOrigin = image.Point{X: b.Min.X + halfWidth - 1, Y: b.Min.Y + quarterHeight}
+	}
 	nBaseValue, _, _, _ := s.Image.At(northOrigin.X, northOrigin.Y).RGBA()
 
 	log.WithFields(log.Fields{
+		"pos":        s.Position,
 		"X":          northOrigin.X,
 		"Y":          northOrigin.Y,
+		"predefined": len(s.NorthPoint) == 2,
 		"base_value": nBaseValue,
 	}).Debug("North origin")
 
@@ -176,12 +192,19 @@ func (s *SsDigit) Scan() {
 
 	// South origin points
 	// the south is slanted to the left
-	southOrigin := image.Point{X: b.Min.X + halfWidth - 2, Y: b.Min.Y + quarterHeight*3}
+	var southOrigin image.Point
+	if len(s.SouthPoint) == 2 {
+		southOrigin = image.Point{X: s.SouthPoint[0], Y: s.SouthPoint[1]}
+	} else {
+		southOrigin = image.Point{X: b.Min.X + halfWidth - 2, Y: b.Min.Y + quarterHeight*3}
+	}
 	sBaseValue, _, _, _ := s.Image.At(southOrigin.X, southOrigin.Y).RGBA()
 
 	log.WithFields(log.Fields{
+		"pos":        s.Position,
 		"X":          southOrigin.X,
 		"Y":          southOrigin.Y,
+		"predefined": len(s.SouthPoint) == 2,
 		"base_value": sBaseValue,
 	}).Debug("South origin")
 
@@ -189,12 +212,21 @@ func (s *SsDigit) Scan() {
 	s.SouthEast = s.isActiveSegment(sBaseValue, s.minValue(southOrigin, quarterWidth, EAST))
 	s.SouthPole = s.isActiveSegment(sBaseValue, s.minValue(southOrigin, quarterHeight, SOUTH))
 
+	// debug output the segments
+	if DEBUG {
+		out, err := os.Create(fmt.Sprintf("debug/%d.png", s.Position))
+		if err != nil {
+			log.Panic(err)
+		}
+		png.Encode(out, s.Image)
+		out.Close()
+	}
 }
 
 func (s *SsDigit) isActiveSegment(baseValue, crossValue uint32) bool {
 	// the base value should be lighter than the cross value.
 	// We need about 20% darker value to activate the segment.
-	threshold := float64(baseValue) * 0.6
+	threshold := float64(baseValue) * 0.5
 	return float64(crossValue) < threshold
 }
 
@@ -314,23 +346,34 @@ func (s *SsDigit) minValue(origin image.Point, length, direction int) uint32 {
 		SOUTH: image.Point{X: 0, Y: 1},
 	}
 
+	bounds := s.Image.Bounds()
 	point := origin
 	pointMod := directionMap[direction]
 
 	minValue, _, _, _ := s.Image.At(point.X, point.Y).RGBA()
 	for a := 0; a < length; a++ {
 		point = point.Add(pointMod)
+
+		if point.X < bounds.Min.X || point.X > bounds.Max.X {
+			break
+		}
+
+		if point.Y < bounds.Min.Y || point.Y > bounds.Max.Y {
+			break
+		}
+
 		pValue, _, _, _ := s.Image.At(point.X, point.Y).RGBA()
 		// minValue = (minValue + pValue) / 2
-		if pValue < minValue {
+		if minValue > pValue {
 			minValue = pValue
 		}
 
 		if DEBUG {
 			if img, ok := s.Image.(*image.RGBA); ok {
-				img.Set(point.X, point.Y, color.RGBA{0, 255, 0, 255})
+				img.Set(point.X, point.Y, color.RGBA{uint8(pValue), 255, 0, 255})
 			}
 		}
+
 	}
 
 	return minValue

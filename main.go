@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 
 	"github.com/dhogborg/gosser/internal/ssocr"
@@ -27,11 +28,33 @@ func main() {
 			ssocr.DEBUG = true
 		}
 
-		ssocr := ssocr.NewSSOCR(c.Int("positions"))
+		// use a manifest file for segment reading
+		var manifest []byte
+		if manifestfile := c.String("manifest"); manifestfile != "" {
+			log.Info("using manifest file")
+
+			buffer, err := ioutil.ReadFile(manifestfile)
+			if err != nil {
+				panic(err)
+			}
+			manifest = buffer
+		}
+
+		pos := c.Int("positions")
+
+		ssocr := ssocr.NewSSOCR(pos, manifest)
 		result := ssocr.Scan(c.String("input"))
 
+		if c.Bool("pedantic") {
+			if strings.Index(result, "-") > -1 {
+				log.WithFields(log.Fields{
+					"result": result,
+				}).Error("result is not well formed (pedantic mode)")
+			}
+			os.Exit(-1)
+		}
+
 		if c.String("output") == "int" {
-			result := strings.Replace(result, "-", "0", -1)
 
 			i, err := strconv.ParseFloat(result, 64)
 			if err != nil {
@@ -43,7 +66,7 @@ func main() {
 			}
 
 			fmt.Printf("%f\n", i)
-			return
+			os.Exit(0)
 		}
 
 		// default printout
@@ -56,6 +79,10 @@ func main() {
 			Name:  "input,i",
 			Usage: "input file",
 		},
+		cli.StringFlag{
+			Name:  "manifest,m",
+			Usage: "Manifest file with coordinates for segments",
+		},
 		cli.IntFlag{
 			Name:  "positions,p",
 			Usage: "Number of digits in the image",
@@ -64,6 +91,10 @@ func main() {
 			Name:  "output,o",
 			Value: "string",
 			Usage: "Output type, int or string",
+		},
+		cli.BoolFlag{
+			Name:  "pedantic",
+			Usage: "Pedantic mode will output an error rather than let you see a invalid result",
 		},
 		cli.IntFlag{
 			Name:  "div",
