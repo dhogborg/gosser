@@ -188,7 +188,7 @@ func (s *SsDigit) Scan() {
 	s.NorthEast = s.isActiveSegment(nBaseValue, s.minValue(northOrigin, quarterWidth, EAST))
 
 	// center, use north origin
-	s.Equator = s.isActiveSegment(nBaseValue, s.minValue(northOrigin, quarterHeight*2, SOUTH))
+	s.Equator = s.isActiveSegment(nBaseValue, s.minValue(northOrigin, quarterHeight, SOUTH))
 
 	// South origin points
 	// the south is slanted to the left
@@ -234,7 +234,7 @@ func (s *SsDigit) String() string {
 
 	characters := map[string]*SsDigit{
 		"0": &SsDigit{NorthPole: true, NorthWest: true, NorthEast: true, SouthWest: true, SouthEast: true, SouthPole: true},
-		"1": &SsDigit{NorthEast: true, SouthWest: true},
+		"1": &SsDigit{NorthEast: true, SouthEast: true},
 		"2": &SsDigit{NorthPole: true, NorthEast: true, Equator: true, SouthWest: true, SouthPole: true},
 		"3": &SsDigit{NorthPole: true, NorthEast: true, Equator: true, SouthEast: true, SouthPole: true},
 		"4": &SsDigit{NorthWest: true, NorthEast: true, Equator: true, SouthEast: true},

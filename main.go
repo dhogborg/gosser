@@ -67,12 +67,11 @@ func main() {
 				log.Panic(err)
 			}
 
-			if c.Int("div") > 0 {
+			if c.Int("div") > 1 {
 				i = i / c.Float64("div")
 			}
 
 			result := fmt.Sprintf("%f", i)
-			log.Info(result)
 			println(result)
 			os.Exit(0)
 		}
@@ -106,6 +105,7 @@ func main() {
 		},
 		cli.IntFlag{
 			Name:  "div",
+			Value: 1,
 			Usage: "Divide the result by a factor (only int output)",
 		},
 		cli.BoolFlag{
