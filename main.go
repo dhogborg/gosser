@@ -15,6 +15,11 @@ import (
 
 var DEBUG = false
 
+const (
+	OutputModeString string = "string"
+	OutputModeNumber string = "number"
+)
+
 func main() {
 
 	app := cli.NewApp()
@@ -51,7 +56,8 @@ func main() {
 		ssocr := ssocr.NewSSOCR(pos, manifest)
 		result := ssocr.Scan(c.String("input"))
 
-		if c.Bool("pedantic") {
+		// integer output forces pedantic mode
+		if c.Bool("pedantic") || c.String("output") == OutputModeNumber {
 			if strings.Index(result, "-") > -1 {
 				log.WithFields(log.Fields{
 					"result": result,
@@ -60,7 +66,7 @@ func main() {
 			}
 		}
 
-		if c.String("output") == "int" {
+		if c.String("output") == OutputModeNumber {
 
 			i, err := strconv.ParseFloat(result, 64)
 			if err != nil {
@@ -96,8 +102,8 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "output,o",
-			Value: "string",
-			Usage: "Output type, int or string",
+			Value: OutputModeString,
+			Usage: "Output type, number or string",
 		},
 		cli.BoolFlag{
 			Name:  "pedantic",
