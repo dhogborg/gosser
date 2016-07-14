@@ -14,6 +14,9 @@ build_linux:
 
 package: build_linux
 	docker build -t dhogborg/gosser:latest .
+    
+push:
+    docker push dhogborg/gosser:latest
 	
 lint:
 	golint .
