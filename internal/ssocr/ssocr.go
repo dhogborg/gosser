@@ -382,7 +382,7 @@ func (s *SsDigit) minValue(origin image.Point, length, direction int) uint32 {
 	log.WithFields(log.Fields{
 		"value": minValue,
 		"dir":   direction,
-	}).Info("minvalue")
+	}).Debug("minvalue")
 
 	return minValue
 }

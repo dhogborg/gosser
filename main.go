@@ -25,18 +25,18 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "Gosser"
 	app.Usage = "Read seven segment display image, output result to sdtout"
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Author = "github.com/dhogborg"
 	app.Email = "d@hogborg.se"
 
 	app.Action = func(c *cli.Context) {
 
-		DEBUG := c.Bool("debug")
+		DEBUG := c.GlobalBool("debug")
 		ssocr.DEBUG = DEBUG
 
 		// use a manifest file for segment reading
 		var manifest []byte
-		if manifestfile := c.String("manifest"); manifestfile != "" {
+		if manifestfile := c.GlobalString("manifest"); manifestfile != "" {
 
 			if DEBUG {
 				log.WithFields(log.Fields{
@@ -51,13 +51,13 @@ func main() {
 			manifest = buffer
 		}
 
-		pos := c.Int("positions")
+		pos := c.GlobalInt("positions")
 
 		ssocr := ssocr.NewSSOCR(pos, manifest)
-		result := ssocr.Scan(c.String("input"))
+		result := ssocr.Scan(c.GlobalString("input"))
 
 		// integer output forces pedantic mode
-		if c.Bool("pedantic") || c.String("output") == OutputModeNumber {
+		if c.GlobalBool("pedantic") || c.GlobalString("output") == OutputModeNumber {
 			if strings.Index(result, "-") > -1 {
 				log.WithFields(log.Fields{
 					"result": result,
@@ -66,15 +66,15 @@ func main() {
 			}
 		}
 
-		if c.String("output") == OutputModeNumber {
+		if c.GlobalString("output") == OutputModeNumber {
 
 			i, err := strconv.ParseFloat(result, 64)
 			if err != nil {
 				log.Panic(err)
 			}
 
-			if c.Int("div") > 1 {
-				i = i / c.Float64("div")
+			if c.GlobalInt("div") > 1 {
+				i = i / float64(c.GlobalInt("div"))
 			}
 
 			result := fmt.Sprintf("%f", i)
