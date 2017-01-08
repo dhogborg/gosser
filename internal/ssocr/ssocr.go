@@ -264,7 +264,7 @@ func (s *SsDigit) String() string {
 		NorthPole + NorthWest + Equator + SouthEast + SouthWest + SouthPole:             "6",
 		NorthPole + NorthEast + SouthEast:                                               "7",
 		NorthPole + NorthEast + NorthWest + Equator + SouthEast + SouthWest + SouthPole: "8",
-		NorthPole + NorthEast + NorthWest + Equator + SouthWest + SouthPole:             "9",
+		NorthPole + NorthEast + NorthWest + Equator + SouthEast:                         "9",
 	}
 
 	if c, ok := characters[s.Segments]; ok {
