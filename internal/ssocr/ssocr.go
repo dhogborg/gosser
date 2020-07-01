@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"image/color"
 
@@ -18,7 +18,7 @@ import (
 	"image/png"
 )
 
-// Debug enables debug output
+// DEBUG enables debug output
 var DEBUG = false
 
 // SSOCR is a seven segment display OCR reader
@@ -255,8 +255,8 @@ func (s *SsDigit) isActiveSegment(baseValue, crossValue uint32) bool {
 func (s *SsDigit) String() string {
 
 	characters := map[int]string{
-		NorthPole + NorthEast + NorthWest + SouthEast + SouthWest + SouthPole:           "0",
-		NorthEast + SouthEast:                                                           "1",
+		NorthPole + NorthEast + NorthWest + SouthEast + SouthWest + SouthPole: "0",
+		NorthEast + SouthEast: "1",
 		NorthPole + NorthEast + Equator + SouthWest + SouthPole:                         "2",
 		NorthPole + NorthEast + Equator + SouthEast + SouthPole:                         "3",
 		NorthEast + NorthWest + Equator + SouthEast:                                     "4",
@@ -296,11 +296,11 @@ func (s *SsDigit) Print() {
 
 func (s *SsDigit) Dotstrings() []string {
 	dots := [][]string{
-		[]string{" ", " ", " "},
-		[]string{" ", " ", " "},
-		[]string{" ", " ", " "},
-		[]string{" ", " ", " "},
-		[]string{" ", " ", " "},
+		{" ", " ", " "},
+		{" ", " ", " "},
+		{" ", " ", " "},
+		{" ", " ", " "},
+		{" ", " ", " "},
 	}
 	if (s.Segments & NorthPole) == NorthPole {
 		dots[0] = []string{"*", "*", "*"}
@@ -343,10 +343,10 @@ func (s *SsDigit) Dotstrings() []string {
 func (s *SsDigit) minValue(origin image.Point, length, direction int) uint32 {
 
 	directionMap := map[int]image.Point{
-		North: image.Point{X: 0, Y: -1},
-		West:  image.Point{X: -1, Y: 0},
-		East:  image.Point{X: 1, Y: 0},
-		South: image.Point{X: 0, Y: 1},
+		North: {X: 0, Y: -1},
+		West:  {X: -1, Y: 0},
+		East:  {X: 1, Y: 0},
+		South: {X: 0, Y: 1},
 	}
 
 	point := origin

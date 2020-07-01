@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 
 	"github.com/dhogborg/gosser/internal/ssocr"
 )

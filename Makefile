@@ -42,13 +42,10 @@ all: build_darwin build_linux build_arm5 build_arm7 build_win64 build_win32
 
 package: build_linux
 	docker build -t dhogborg/gosser:latest .
-    
+
 push:
     docker push dhogborg/gosser:latest
-	
-	
-lint:
-	golint .
+
 
 clean:
 	- rm -r build
